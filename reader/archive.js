@@ -85,37 +85,73 @@
         }
     }
 
+    // Find the Reading Guide container by text content
+    function findReadingGuideContainer() {
+        const allDivs = document.querySelectorAll('div');
+        for (const div of allDivs) {
+            const firstChild = div.querySelector(':scope > div:first-child');
+            if (firstChild && firstChild.textContent.trim() === 'Reading Guide') {
+                return div;
+            }
+        }
+        return null;
+    }
+
     // Create the HTML block
     function createApiBlock() {
         const apiBlock = document.createElement("div");
         apiBlock.id = apiId;
-        apiBlock.className = "sr_657f5207";
-        apiBlock.style.marginTop = "20px";
 
-        apiBlock.innerHTML = `
-            <div class="sr_f087af91">API Key</div>
-            <div class="sr_a3f98d55">
-                <input
-                    id="api_key_input"
-                    type="text"
-                    placeholder="AIza..."
-                    aria-label="API Key"
-                    class="sr_3e70253f sr_aedd5768 sr_7a1a46d6 sr_158edd22 sr_19208362 sr_64fbaa67"
-                    style="flex:1;"
-                />
-                <button
-                    id="api_key_submit"
-                    class="sr_3e70253f sr_aedd5768 sr_7a1a46d6 sr_158edd22 sr_19208362 sr_64fbaa67"
-                    type="button"
-                >
-                    <div class="sr_43854aeb">Submit</div>
-                </button>
-            </div>
-        `;
+        // Find the reference container
+        const referenceContainer = findReadingGuideContainer();
+        
+        if (!referenceContainer) {
+            console.warn("Reading Guide container not found - using fallback styling");
+            apiBlock.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 8px;">API Key</div>
+                <div style="display: flex; gap: 8px;">
+                    <input id="api_key_input" type="text" placeholder="AIza..." style="flex:1; padding: 8px; border-radius: 6px; border: 1px solid #ccc;" />
+                    <button id="api_key_submit" type="button" style="padding: 8px 16px; border-radius: 6px; background: #007bff; color: white; border: none; cursor: pointer;">
+                        Submit
+                    </button>
+                </div>
+            `;
+        } else {
+            // Clone classes from the reference structure
+            const outerContainerClass = Array.from(referenceContainer.classList).join(' ');
+            const headerDiv = referenceContainer.querySelector(':scope > div:first-child');
+            const headerClass = headerDiv ? Array.from(headerDiv.classList).join(' ') : '';
+            const buttonContainer = referenceContainer.querySelector(':scope > div:nth-child(2)');
+            const buttonContainerClass = buttonContainer ? Array.from(buttonContainer.classList).join(' ') : '';
+            
+            // Get the SECOND button (not the first one which might be selected/active)
+            const allButtons = referenceContainer.querySelectorAll('button');
+            const buttonToClone = allButtons.length > 1 ? allButtons[1] : allButtons[0];
+            const buttonClass = buttonToClone ? Array.from(buttonToClone.classList).join(' ') : '';
+            
+            const innerTextDiv = buttonToClone?.querySelector('div');
+            const innerTextClass = innerTextDiv ? Array.from(innerTextDiv.classList).join(' ') : '';
+
+            console.log("Cloned classes:", { outerContainerClass, headerClass, buttonContainerClass, buttonClass, innerTextClass });
+
+            apiBlock.className = outerContainerClass;
+            apiBlock.innerHTML = `
+                <div class="${headerClass}">API Key</div>
+                <div class="${buttonContainerClass}">
+                    <input id="api_key_input" type="text" placeholder="AIza..." class="${buttonClass}" style="flex:1; text-align: center;" />
+                    <button id="api_key_submit" class="${buttonClass}" type="button">
+                        <div class="${innerTextClass}">Submit</div>
+                    </button>
+                </div>
+            `;
+        }
 
         apiBlock.querySelector("#api_key_submit").onclick = () => {
             const key = document.getElementById("api_key_input").value.trim();
-            if (!key) return alert("Enter API key!");
+            if (!key) {
+                showTopNotif('Please enter an API key', 'error', 2500);
+                return;
+            }
             sendApiKeyToServer(key);
         };
 
